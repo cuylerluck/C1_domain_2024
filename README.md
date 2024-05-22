@@ -1,2 +1,3 @@
 # C1_domain_2024
-Code for Luck et al 2024 manuscript investigating the role of the C1 domain in CIC::DUX4 function
+
+The code in this repository accompanies the manuscript "The Capicua C1 Domain Augments, but may not Strictly be Required for, Activity of the CIC::DUX4 Fusion Oncoprotein" by Luck, Jacobs, and Okimoto (2024). 
