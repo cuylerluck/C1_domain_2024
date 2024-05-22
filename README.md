@@ -8,9 +8,13 @@ RNA-seq raw and processed (counts, log2cpm) data files are available at _______.
 There are two main analyses that the code is divided into, with the purpose of each file described below:
 
 ## RNA-seq processing and analysis
-documentation_with_job_details_dC1.txt : a text file describing processing of FASTQ files with STAR (and other tools) as performed locally on a MacBook Pro and on Wynton, UCSF's high-performance computing cluster.
-NIH3T3_dC1_analysis.R : R script detailing differential expression analysis of RNA-seq data and used for plotting figures.
+
+***documentation_with_job_details_dC1.txt*** : a text file describing processing of FASTQ files with STAR (and other tools) as performed locally on a MacBook Pro and on Wynton, UCSF's high-performance computing cluster.
+
+***NIH3T3_dC1_analysis.R*** : R script detailing differential expression analysis of RNA-seq data and used for plotting figures.
 
 ## Mouse tumor size analysis
-C2C12_dC1_mouse_tumor_plots.R : a simple R script to clean and plot mouse tumor size data.
-mouse_tumor_sizing_C2C12_clonal_dC1_Mar2024.csv : raw data for mouse tumor sizing.
+
+***C2C12_dC1_mouse_tumor_plots.R*** : a simple R script to clean and plot mouse tumor size data.
+
+***mouse_tumor_sizing_C2C12_clonal_dC1_Mar2024.csv*** : raw data for mouse tumor sizing.
