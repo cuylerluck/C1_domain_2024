@@ -1,0 +1,244 @@
+Documentation for analysis of my clonal NIH/3T3 cell lines that were transduced with one of:
+pMY-IRES-EGFP (EV: EVB6 and EVE8)
+pMYs-CICDUX4 (CICDUX4: CDD4 and CDD8)
+pMYs-CICDUX4-dC1 (CICDUX4 dC1: delB5 and delC10)
+
+
+STAR version 2.7.10b
+FastQC version 0.12.1
+samtools version 1.17
+multiqc version 1.13
+
+
+
+...........
+...
+
+These are mouse cells, so I first need to build a genome index for STAR to use. 
+
+Downloading RefSeq assembly for GRCm39: FASTA & GTF from the NCBI website: https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001635.27/
+
+Downloading the genomic FASTA and the GTF file:
+
+GCF_000001635.27_GRCm39_genomic.fna
+GCF_000001635.27_GRCm39_genomic.gtf (renamed this from genome.gtf)
+
+Then moving them onto Wynton using scp.
+
+...
+...........
+
+...........
+...
+
+Now to have STAR build a genome index...
+
+qsub -pe smp 8 -cwd -m bea GRCm39_index_STAR.sh
+
+NOTES:
+- used 149 for sjdbOverhang because my reads are 150bp and they recommend doing max(ReadLength)-1.
+
+#!/bin/bash           # the shell language when run outside of the job scheduler
+#                     # lines starting with #$ is an instruction to the job scheduler
+#$ -S /bin/bash       # the shell language when run via the job scheduler [IMPORTANT]
+##$ -cwd               # job should run in the current working directory (disabled)
+#$ -j n               # STDERR and STDOUT should be joined
+#$ -l mem_free=16G     # job requires up to 16 GiB of RAM per slot
+#$ -l scratch=200G      # job requires up to 200 GiB of local /scratch space
+##$ -l h_rt=3:00:00   # job requires up to 3 hours of runtime (disabled)
+#$ -r n               # if job crashes, it should not be restarted
+
+module load CBI star
+
+STAR --runThreadN "${NSLOTS:-1}" --runMode genomeGenerate --genomeDir ./star_GRCm39_index --genomeFastaFiles ./GCF_000001635.27_GRCm39_genomic.fna --sjdbGTFfile ./GCF_000001635.27_GRCm39_genomic.gtf --sjdbOverhang 149
+
+## End-of-job summary, if running as a job
+[[ -n "$JOB_ID" ]] && qstat -j "$JOB_ID"
+
+...
+...........
+
+
+...........
+...
+
+I want to change the chromosome naming used with the GRCm39 reference sequence I downloaded. The STAR manual says this is OK to change in chrName.txt as long as the order of the chromosomes is not changed. I will use the info at https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001635.27/ to rename the true chromosomes (including X/Y and M) using sed.
+
+cp chrName.txt chrNameTemp.txt
+sed -i 's/NC_000067.7/chr1/' chrNameTemp.txt
+sed -i 's/NC_000068.8/chr2/' chrNameTemp.txt
+sed -i 's/NC_000069.7/chr3/' chrNameTemp.txt
+sed -i 's/NC_000070.7/chr4/' chrNameTemp.txt
+sed -i 's/NC_000071.7/chr5/' chrNameTemp.txt
+sed -i 's/NC_000072.7/chr6/' chrNameTemp.txt
+sed -i 's/NC_000073.7/chr7/' chrNameTemp.txt
+sed -i 's/NC_000074.7/chr8/' chrNameTemp.txt
+sed -i 's/NC_000075.7/chr9/' chrNameTemp.txt
+sed -i 's/NC_000076.7/chr10/' chrNameTemp.txt
+sed -i 's/NC_000077.7/chr11/' chrNameTemp.txt
+sed -i 's/NC_000078.7/chr12/' chrNameTemp.txt
+sed -i 's/NC_000079.7/chr13/' chrNameTemp.txt
+sed -i 's/NC_000080.7/chr14/' chrNameTemp.txt
+sed -i 's/NC_000081.7/chr15/' chrNameTemp.txt
+sed -i 's/NC_000082.7/chr16/' chrNameTemp.txt
+sed -i 's/NC_000083.7/chr17/' chrNameTemp.txt
+sed -i 's/NC_000084.7/chr18/' chrNameTemp.txt
+sed -i 's/NC_000085.7/chr19/' chrNameTemp.txt
+sed -i 's/NC_000086.8/chrX/' chrNameTemp.txt
+sed -i 's/NC_000087.8/chrY/' chrNameTemp.txt
+sed -i 's/NC_005089.1/chrM/' chrNameTemp.txt
+cp chrNameTemp.txt chrName.txt
+rm chrNameTemp.txt
+
+...
+...........
+
+...........
+...
+
+Next, we can perform STAR alignment of all samples, one at a time. After generating an alignment as a .sam file, we converted to a .bam file using samtools and then deleted the .sam file just to reduce disk space usage.
+We used --quantMode GeneCounts to extract gene counts at the same time as alignment was performed.
+I am also generating a FASTQC report for the fastq files at the same time, for quality control.
+Also having samtools index the .bam files.
+
+Run in home directory with:
+qsub -pe smp 8 -cwd -m bea star_all_samples_dC1.sh
+---
+#!/bin/bash           # the shell language when run outside of the job scheduler
+#                     # lines starting with #$ is an instruction to the job scheduler
+#$ -S /bin/bash       # the shell language when run via the job scheduler [IMPORTANT]
+##$ -cwd               # job should run in the current working directory (disabled)
+#$ -j n               # STDERR and STDOUT should be joined
+#$ -l mem_free=16G     # job requires up to 16 GiB of RAM per slot
+#$ -l scratch=200G      # job requires up to 200 GiB of local /scratch space
+##$ -l h_rt=3:00:00   # job requires up to 3 hours of runtime (disabled)
+#$ -r n               # if job crashes, it should not be restarted
+
+module load CBI star samtools fastqc
+
+for sample in EVB6 EVE8 CDD4 CDD8 delB5 delC10
+do
+	STAR --runThreadN "${NSLOTS:-1}" --genomeDir ./star_GRCm39_index --readFilesIn ./Cuyler_NIH3T3_dC1_July2023/raw/${sample}_1.fq.gz ./Cuyler_NIH3T3_dC1_July2023/raw/${sample}_2.fq.gz --readFilesCommand zcat --outFileNamePrefix ./Cuyler_NIH3T3_dC1_July2023/alignments/star/$sample --quantMode GeneCounts
+	samtools sort -@ "${NSLOTS:-1}" -o ./Cuyler_NIH3T3_dC1_July2023/alignments/star/$sample.bam ./Cuyler_NIH3T3_dC1_July2023/alignments/star/$sample.sam
+	rm ./Cuyler_NIH3T3_dC1_July2023/alignments/star/$sample.sam
+	samtools index -b -@ "${NSLOTS:-1}" ./Cuyler_NIH3T3_dC1_July2023/alignments/star/$sample.bam
+	fastqc ./Cuyler_NIH3T3_dC1_July2023/raw/${sample}_1.fq.gz ./Cuyler_NIH3T3_dC1_July2023/raw/${sample}_2.fq.gz
+done
+
+## End-of-job summary, if running as a job
+[[ -n "$JOB_ID" ]] && qstat -j "$JOB_ID"
+
+
+...
+...........
+
+
+...........
+...
+
+oops. the above works to get .sam and FastQC analyses, but the filenames being passed into samtools commands (and the rm command) are wrong. so I'll run the sam --> bam conversion, rm of .sam file, and indexing of .bam file again.
+
+
+
+Run in home directory with:
+qsub -pe smp 8 -cwd -m bea toBam_all_samples_dC1.sh
+---
+#!/bin/bash           # the shell language when run outside of the job scheduler
+#                     # lines starting with #$ is an instruction to the job scheduler
+#$ -S /bin/bash       # the shell language when run via the job scheduler [IMPORTANT]
+##$ -cwd               # job should run in the current working directory (disabled)
+#$ -j n               # STDERR and STDOUT should be joined
+#$ -l mem_free=16G     # job requires up to 16 GiB of RAM per slot
+#$ -l scratch=200G      # job requires up to 200 GiB of local /scratch space
+##$ -l h_rt=3:00:00   # job requires up to 3 hours of runtime (disabled)
+#$ -r n               # if job crashes, it should not be restarted
+
+module load CBI samtools
+
+for sample in EVB6 EVE8 CDD4 CDD8 delB5 delC10
+do
+	samtools sort -@ "${NSLOTS:-1}" -o ./Cuyler_NIH3T3_dC1_July2023/alignments/star/$sample.bam ./Cuyler_NIH3T3_dC1_July2023/alignments/star/${sample}Aligned.out.sam
+	rm ./Cuyler_NIH3T3_dC1_July2023/alignments/star/${sample}Aligned.out.sam
+	samtools index -b -@ "${NSLOTS:-1}" ./Cuyler_NIH3T3_dC1_July2023/alignments/star/$sample.bam
+done
+
+## End-of-job summary, if running as a job
+[[ -n "$JOB_ID" ]] && qstat -j "$JOB_ID"
+
+
+...
+...........
+
+
+...........
+...
+
+I also want to manually check my samples for parts of the CIC-DUX4 coding sequences which likely will not align to the mouse genome (possible, but not sure, it's based on human sequence). So I will do this by grep'ing the fastq files.
+Importantly, there is likely to be background CIC signal picked up by sequencing of mouse WT CIC, so do not panic if signal across the C1 domain is picked up in EV.
+
+Looking for three specific sequences:
+1) 30nt trans-breakpoint sequence for the human CIC-DUX4 sequence used here
+2) 30nt sequence spanning the 5' side of the CIC C1 domain for the human CIC-DUX4 sequence used here
+3) 30nt sequence spanning the CIC sequence with the C1 domain deleted in the human CIC-DUX4 dC1 used here
+
+These are the sequences:
+1) ctcggactctgggggtggaccccaagccgg
+2) ccatactcctccctgcggcgcaccctggac
+3) ccatactcctccctgcaggctgccactccc
+
+Run in raw data directory with:
+qsub -pe smp 8 -cwd -m bea dC1_sample_grep.sh
+---
+
+#!/bin/bash           # the shell language when run outside of the job scheduler
+#                     # lines starting with #$ is an instruction to the job scheduler
+#$ -S /bin/bash       # the shell language when run via the job scheduler [IMPORTANT]
+##$ -cwd               # job should run in the current working directory (disabled)
+#$ -j n               # STDERR and STDOUT should be joined
+#$ -l mem_free=4G     # job requires up to 4 GiB of RAM per slot
+#$ -l scratch=32G      # job requires up to 32 GiB of local /scratch space
+##$ -l h_rt=3:00:00   # job requires up to 3 hours of runtime (disabled)
+#$ -r n               # if job crashes, it should not be restarted
+
+for sample in EVB6 EVE8 CDD4 CDD8 delB5 delC10
+do
+	zcat ${sample}_1.fq.gz > ${sample}_1_unzipped.fastq
+	grep -i "ctcggactctgggggtggaccccaagccgg" ${sample}_1_unzipped.fastq > grep/${sample}_1_CICDUX4_bp_reads.txt
+	grep -i "ccatactcctccctgcggcgcaccctggac" ${sample}_1_unzipped.fastq > grep/${sample}_1_CIC_5prime_intact_C1_reads.txt
+	grep -i "ccatactcctccctgcaggctgccactccc" ${sample}_1_unzipped.fastq > grep/${sample}_1_CIC_deleted_C1_reads.txt
+	rm ${sample}_1_unzipped.fastq
+	zcat ${sample}_2.fq.gz > ${sample}_2_unzipped.fastq
+	grep -i "ctcggactctgggggtggaccccaagccgg" ${sample}_2_unzipped.fastq > grep/${sample}_2_CICDUX4_bp_reads.txt
+	grep -i "ccatactcctccctgcggcgcaccctggac" ${sample}_2_unzipped.fastq > grep/${sample}_2_CIC_5prime_intact_C1_reads.txt
+	grep -i "ccatactcctccctgcaggctgccactccc" ${sample}_2_unzipped.fastq > grep/${sample}_2_CIC_deleted_C1_reads.txt
+	rm ${sample}_2_unzipped.fastq
+done
+
+## End-of-job summary, if running as a job
+[[ -n "$JOB_ID" ]] && qstat -j "$JOB_ID"
+
+
+
+NOTE: I counted the number of lines in each output file using wc -l and saved the resulting output in "grep_results_072423.png".
+
+...
+...........
+
+
+
+...........
+...
+
+Combining the fastqc reports using multiqc on my local computer.
+
+
+Simply run the following command in the directory where the fastqc reports are living:
+multiqc .
+
+
+Note: the samples look good to me. Main "concern" is about sequence duplication, which is not very applicable for RNAseq data.
+...
+...........
+
+
+
