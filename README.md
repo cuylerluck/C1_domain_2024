@@ -5,7 +5,7 @@ These files are not plug-and-play but serve to provide transparency for how we a
 With questions please contact the lead author at cuyler.luck@ucsf.edu and the corresponding author at ross.okimoto@ucsf.edu.
 RNA-seq raw and processed (counts, log2cpm) data files are available at GEO, series GSE269295 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE269295).
 
-There are two main analyses that the code is divided into, with the purpose of each file described below:
+There are three main analyses that the code is divided into, with the purpose of each file described below:
 
 ## RNA-seq processing and analysis
 
@@ -18,3 +18,7 @@ There are two main analyses that the code is divided into, with the purpose of e
 ***C2C12_dC1_mouse_tumor_plots.R*** : a simple R script to clean and plot mouse tumor size data.
 
 ***mouse_tumor_sizing_C2C12_clonal_dC1_Mar2024.csv*** : raw data for mouse tumor sizing.
+
+## CIC fusion breakpoint analysis
+
+***CIC_breakpoint_plots.R*** : an R script to analyze and plot data from the CIC fusion breakpoint database.
