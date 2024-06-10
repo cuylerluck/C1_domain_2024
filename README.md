@@ -21,4 +21,4 @@ There are three main analyses that the code is divided into, with the purpose of
 
 ## CIC fusion breakpoint analysis
 
-***CIC_breakpoint_plots.R*** : an R script to analyze and plot data from the CIC fusion breakpoint database.
+***CIC_breakpoint_plots.R*** : an R script to analyze and plot data from the CIC fusion breakpoint database (data is available in the supplement of the manuscript)
