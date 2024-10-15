@@ -20,6 +20,7 @@ library(pheatmap) #1.0.12
 library(tidyr) #1.3.0
 library(patchwork) #1.1.2
 library(ggrepel) #0.9.3
+library(gprofiler2) #0.2.3
 
 setwd("/Volumes/cuyler/ucsf_okimoto_lab/cuyler_NIH3T3_dC1/GRCm39_alignment/") #this will change by user & location of data
 
@@ -270,7 +271,7 @@ volcano_dC1vsEV = ggplot(data = dC1.EV_results_volcano, aes(x = logFC, y = -log1
 
 #Plot these two together using patchwork
 patchwork_volcano = volcano_CICDUX4vsEV / volcano_dC1vsEV
-pdf(file = "plots/volcano_both_vs_EV.pdf", width = 8, height = 12)
+pdf(file = "plots/NIH3T3_volcano_both_vs_EV.pdf", width = 8, height = 12)
 patchwork_volcano
 dev.off()
   
@@ -375,10 +376,11 @@ genes_on_either = c(all_NIH3T3_CICDUX4_on, on_dC1_not_CICDUX4)
 #Now let's look at a heatmap of this
 logcpm_heatmap_genes_on_either = logcpm[rownames(logcpm) %in% genes_on_either,]
 #Plotting a heatmap with scaling within rows turned on
-pdf(file = "plots/heatmap_genes_on_either.pdf", width = 4, height = 6)
-pheatmap(logcpm_heatmap_genes_on_either, 
+pdf(file = "plots/NIH3T3_heatmap_genes_on_either.pdf", width = 4, height = 6)
+heatmap_genes_on_either = pheatmap(logcpm_heatmap_genes_on_either, 
          scale = "row", 
-         show_rownames = F,
+         show_rownames = T,
+         fontsize_row = 1,
          annotation_col = annotation_col,
          annotation_colors = annotation_colors,
          cluster_cols = F)
@@ -431,13 +433,13 @@ logcpm_true_targets = lapply(true_targets, make_logcpm_plot)
 #and arrange the plots to be plotted nicely using patchwork
 patchwork_logcpm_true_targets=wrap_plots(logcpm_true_targets[1:length(true_targets)]) + plot_layout(ncol=5)
 
-pdf(file="plots/patchwork_logcpm_true_targets.pdf", width = 10, height = 5)
+pdf(file="plots/NIH3T3_patchwork_logcpm_true_targets.pdf", width = 10, height = 5)
 patchwork_logcpm_true_targets
 dev.off()
 
-#finally, write some datasets to csv files to share with people.
+#Write some datasets to csv files to share with people.
 #logcpm
-write.table(logcpm, file = "outputs/log2_of_cpm.txt", row.names = F, sep = "\t", quote = F)
+write.table(logcpm, file = "outputs/NIH3T3_log2_of_cpm.txt", row.names = F, sep = "\t", quote = F)
 
 #raw counts, stranded, combined
 #put gene names back on master as a variable to simplify writing
@@ -445,8 +447,88 @@ master_for_writing = tibble::rownames_to_column(master,"gene")
 write.table(master_for_writing, file = "outputs/counts_NIH3T3_dC1.txt", row.names = F, sep = "\t", quote = F)
 
 #CIC::DUX4 vs EV edgeR output, with gene labels
-write.table(CICDUX4.EV_results_volcano, file = "outputs/CD4_vs_EV_DE.txt", row.names = F, sep = "\t", quote = F)
+write.table(CICDUX4.EV_results_volcano, file = "outputs/NIH3T3_CD4_vs_EV_DE.txt", row.names = F, sep = "\t", quote = F)
 
 #dC1 vs EV edgeR output, with gene labels
-write.table(dC1.EV_results_volcano, file = "outputs/dC1_vs_EV_DE.txt", row.names = F, sep = "\t", quote = F)
+write.table(dC1.EV_results_volcano, file = "outputs/NIH3T3_dC1_vs_EV_DE.txt", row.names = F, sep = "\t", quote = F)
+
+
+#dC1 vs CIC::DUX4 edgeR output, with gene labels
+write.table(dC1.CICDUX4.results_volcano, file = "outputs/NIH3T3_dC1_vs_CICDUX4_DE.txt", row.names = F, sep = "\t", quote = F)
+
+
+
+
+#Gene ontology / GSEA to help determine if there are any interesting pathways 
+#in the different blocks of genes regulated by full length vs dC1 CIC::DUX4
+
+#I'm manually getting the genes in the four distinct blocks of the heatmap
+#doing this with pheatmap settings, not all shown here
+
+head(logcpm_heatmap_genes_on_either) #original order going into the heatmap
+head(logcpm_heatmap_genes_on_either[heatmap_genes_on_either$tree_row$order,],25) #adjusted order after clustering
+
+ordered_logcpm_heatmap_genes_on_either = logcpm_heatmap_genes_on_either[heatmap_genes_on_either$tree_row$order,]
+
+
+#Block 1 (genes up in dC1, not in CD4) is from Nqo1 to Serpinb1a
+which(rownames(ordered_logcpm_heatmap_genes_on_either) == "Nqo1")
+which(rownames(ordered_logcpm_heatmap_genes_on_either) == "Serpinb1a")
+#Rows 1 thru 30
+block1 = ordered_logcpm_heatmap_genes_on_either[1:30,]
+
+#Block 2 (genes up in CD4, but off in dC1) is from Gfra1 to Amotl1
+which(rownames(ordered_logcpm_heatmap_genes_on_either) == "Gfra1")
+which(rownames(ordered_logcpm_heatmap_genes_on_either) == "Amotl1")
+#Rows 31 thru 159
+block2 = ordered_logcpm_heatmap_genes_on_either[31:159,]
+
+#Block 3 (genes up in both CD4 and dC1 vs EV, but potentially to differing degrees) is from Hes1 to Gm32575 [the end]
+which(rownames(ordered_logcpm_heatmap_genes_on_either) == "Hes1")
+which(rownames(ordered_logcpm_heatmap_genes_on_either) == "Gm32575")
+#Rows 160 thru 359
+block3 = ordered_logcpm_heatmap_genes_on_either[160:359,]
+
+
+#Now run gene list functional enrichment analysis, I can do all blocks at once with this nice package
+
+gost_blocks = gost(list(block1 = rownames(block1),
+                        block2 = rownames(block2),
+                        block3 = rownames(block3)), 
+                   organism = "mmusculus", 
+                   correction_method = "g_SCS", 
+                   evcodes = F)
+
+#split out the results by block
+gost_results = gost_blocks$result
+gost_block1 = gost_results[gost_results$query == "block1",]
+gost_block2 = gost_results[gost_results$query == "block2",]
+gost_block3 = gost_results[gost_results$query == "block3",]
+
+#sort descending by adjusted p-value (it is adjusted by the function)
+gost_block1 = gost_block1[order(gost_block1$p_value, decreasing = F),]
+gost_block2 = gost_block2[order(gost_block2$p_value, decreasing = F),]
+gost_block3 = gost_block3[order(gost_block3$p_value, decreasing = F),]
+
+#trimming down a bit for file writing (including a column of lists causes an error in write.table)
+gost_block1 = dplyr::select(gost_block1, -parents)
+gost_block2 = dplyr::select(gost_block2, -parents)
+gost_block3 = dplyr::select(gost_block3, -parents)
+
+
+#write these out 
+write.table(gost_block1, file = "outputs/NIH3T3_block1_geneOntology.txt", row.names = F, sep = "\t", quote = F)
+write.table(gost_block2, file = "outputs/NIH3T3_block2_geneOntology.txt", row.names = F, sep = "\t", quote = F)
+write.table(gost_block3, file = "outputs/NIH3T3_block3_geneOntology.txt", row.names = F, sep = "\t", quote = F)
+
+#also writing out the genes in blocks 1, 2, and 3, and the aggregate
+write.table(rownames(block1), file = "outputs/NIH3T3_block1.txt", row.names = F, sep = "\t", quote = F, col.names = c("Gene"))
+write.table(rownames(block2), file = "outputs/NIH3T3_block2.txt", row.names = F, sep = "\t", quote = F, col.names = c("Gene"))
+write.table(rownames(block3), file = "outputs/NIH3T3_block3.txt", row.names = F, sep = "\t", quote = F, col.names = c("Gene"))
+write.table(rownames(ordered_logcpm_heatmap_genes_on_either), file = "outputs/NIH3T3_genes_on_either.txt", row.names = F, sep = "\t", quote = F, col.names = c("Gene"))
+
+
+
+
+
 
