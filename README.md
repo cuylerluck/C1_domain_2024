@@ -9,9 +9,14 @@ There are three main analyses that the code is divided into, with the purpose of
 
 ## RNA-seq processing and analysis
 
-***documentation_with_job_details_dC1.txt*** : a text file describing processing of FASTQ files with STAR (and other tools) as performed locally on a MacBook Pro and on Wynton, UCSF's high-performance computing cluster.
+***documentation_with_job_details_dC1.txt*** : a text file describing processing of NIH/3T3 FASTQ files with STAR (and other tools) as performed locally on a MacBook Pro and on Wynton, UCSF's high-performance computing cluster.
 
-***NIH3T3_dC1_analysis.R*** : R script detailing differential expression analysis of RNA-seq data and used for plotting figures.
+***documentation_with_job_details_C2C12_dC1.txt*** : same as above, but for C2C12 FASTq files.
+
+***NIH3T3_dC1_analysis.R*** : R script detailing differential expression analysis of NIH/3T3 RNA-seq data and used for plotting figures.
+
+***C2C12_dC1_analysis.R*** : vR script detailing differential expression analysis of C2C12 RNA-seq data and used for plotting figures.
+
 
 ## Mouse tumor size analysis
 
