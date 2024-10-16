@@ -3,7 +3,7 @@
 The code in this repository accompanies the manuscript "The Capicua C1 Domain is Required for Full Activity of the CIC::DUX4 Fusion Oncoprotein" by Luck, Jacobs, and Okimoto (2024). 
 These files are not plug-and-play but serve to provide transparency for how we analyzed the data. They may need to be modified for use in different environments or with different data.
 With questions please contact the lead author at cuyler.luck@ucsf.edu and the corresponding author at ross.okimoto@ucsf.edu.
-RNA-seq raw and processed (counts, log2cpm) data files are available at GEO, series GSE269295 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE269295).
+RNA-seq raw and processed (counts, log2cpm) data files are available at GEO, series GSE269295 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE269295) and GSE279546 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE279546) for the NIH/3T3 and C2C12 data, respectively.
 
 There are three main analyses that the code is divided into, with the purpose of each file described below:
 
