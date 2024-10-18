@@ -379,8 +379,7 @@ logcpm_heatmap_genes_on_either = logcpm[rownames(logcpm) %in% genes_on_either,]
 pdf(file = "plots/NIH3T3_heatmap_genes_on_either.pdf", width = 4, height = 6)
 heatmap_genes_on_either = pheatmap(logcpm_heatmap_genes_on_either, 
          scale = "row", 
-         show_rownames = T,
-         fontsize_row = 1,
+         show_rownames = F,
          annotation_col = annotation_col,
          annotation_colors = annotation_colors,
          cluster_cols = F)
